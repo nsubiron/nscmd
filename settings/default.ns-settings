@@ -1,0 +1,15 @@
+{
+  // The following variables can be used:
+  //   * ${home}
+  //   * ${root}
+  //   * ${vol}
+
+  // Mount the following volume at start up.
+  // "volume": "",
+
+  // If "mount_volume", mount the "volume_file" here.
+  // "vol": "",
+
+  // The interpreter will start here.
+  "starting_dir": "${vol}"
+}
