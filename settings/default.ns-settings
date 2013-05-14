@@ -7,7 +7,7 @@
   // Mount the following volume at start up.
   // "volume": "",
 
-  // If "mount_volume", mount the "volume_file" here.
+  // Mounting point for "volume", this value will be stored in ${vol}.
   // "vol": "",
 
   // The interpreter will start here.
