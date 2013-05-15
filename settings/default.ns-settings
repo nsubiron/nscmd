@@ -1,8 +1,10 @@
 {
-  // The following variables can be used:
+  // The following variables can be used (note that are initialized in this
+  // order):
   //   * ${home}
   //   * ${root}
   //   * ${vol}
+  //   * ${data_dir}
 
   // Mount the following volume at start up.
   // "volume": "",
@@ -11,5 +13,8 @@
   // "vol": "",
 
   // The interpreter will start here.
-  "starting_dir": "${vol}"
+  "starting_dir": "${vol}",
+
+  // Default folder for data files.
+  "data_dir": "${vol}/.nscmd"
 }

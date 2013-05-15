@@ -51,6 +51,8 @@ The following variables are available on the settings file.
 <td>${root}</td><td>Root folder of the app.</td>
 </tr><tr>
 <td>${vol}</td><td>Mount point of the volume.</td>
+</tr><tr>
+<td>${data_dir}</td><td>Default folder for data files.</td>
 </tr>
 </table>
 

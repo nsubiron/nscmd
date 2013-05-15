@@ -37,6 +37,7 @@ def init_nscmd_module(args):
         include=['*.ns-settings'],
         exclude=map(lambda item : item + '.ns-settings', excludes))
     sysmap['vol'] = str(sfw.get('vol'))
+    sysmap['data_dir'] = str(sfw.get('data_dir'))
     module.get_settings = lambda: sfw.getall()
     return module
 
