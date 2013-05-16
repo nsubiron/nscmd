@@ -1,24 +1,51 @@
-import re, os, fnmatch, imp, inspect, sys, logging
+import re, os, fnmatch, imp, inspect, sys, logging, utils, platform
 
-class PluginError(Exception):
-    def __init__(self, name):
-        self.name = name
+PLATFORM = platform.system().lower()
+
+class InvalidPlugin(Exception):
+    def __init__(self, name, reason):
         Exception.__init__(self, name)
+        self.name = name
+        self.reason = reason
 
 class PluginProxy(object):
     def __init__(self, name, declaration):
         self.name = name
         self.declaration = declaration
 
+    def validate(self):
+        try:
+          if hasattr(self.declaration, '__platforms__'):
+            if all(p.lower() != PLATFORM for p in self.declaration.__platforms__):
+              raise InvalidPlugin(self.name, 'Platform not supported.')
+          if hasattr(self.declaration, '__extdependencies__'):
+            if any(utils.which(d) is None for d in self.declaration.__extdependencies__):
+              raise InvalidPlugin(self.name, 'One or more dependencies not installed.')
+        except InvalidPlugin as e:
+          raise e
+        except Exception as e:
+          message = 'Exception raised during validation: %s: %s'
+          raise InvalidPlugin(self.name, message % (type(e).__name__, e))
+
     def instantiate(self, *args, **kwargs):
         try:
           self.instance = self.declaration(*args, **kwargs)
-        except:
+        except Exception as e:
           logging.exception('Exception creating instance of plugin \'%s\'' % self.name)
-          raise PluginError(self.name)
+          message = 'Exception raised creating instance: %s: %s'
+          raise InvalidPlugin(self.name, message % (type(e).__name__, e))
 
     def hasattr(self, name):
         return hasattr(self.instance, name)
+
+    def getdoc(self, name=None):
+        if name is None:
+          return self.instance.__doc__
+        else:
+          try:
+            return getattr(self.instance, name).__doc__
+          except:
+            logging.exception('Exception getting \'%s.%s\'' % (self.name, name))
 
     def getargs(self, name):
         try:
@@ -37,21 +64,24 @@ class PluginManager(object):
     def __init__(self, generator):
         self.generator = generator
         self.plugins = []
+        self.invalids = []
 
     def __iter__(self):
         return self.plugins.__iter__()
 
     def clear(self):
         del self.plugins[0:len(self.plugins)]
+        del self.invalids[0:len(self.invalids)]
 
     def reload(self):
         self.clear()
         for plugin in self.generator():
           try:
+            plugin.validate()
             plugin.instantiate()
             self.plugins.append(plugin)
-          except PluginError:
-            pass
+          except InvalidPlugin as e:
+            self.invalids.append(e)
 
 def load_plugins(directory, interface):
     directory = os.path.abspath(directory)

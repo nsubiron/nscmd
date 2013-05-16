@@ -65,12 +65,19 @@ start-up or when `reload_plugins` is called.
 A class name in camel case generates a command in underscore case (e.g.,
 `DoSomethingCommand` will result in `do_something`).
 
-The following functions are recognized:
+The following attributes are recognized:
 
   * `run(self[, argv])`
   * `help(self)`
   * `complete_list(self)`
   * `complete(self, text, line, start_index, end_index)`
+  * `__platforms__`
+  * `__extdependencies__`
+
+If no `help` function is provided, the app will search in the `__doc__`
+attributes of the plugin and its `run` function to generate the help function.
+
+See e.g. [truecrypt plugin](https://github.com/nsubiron/nscmd/blob/master/plugins/truecrypt.py).
 
 ### Available modules
 Apart from every module under `${root}`, two special modules created at run time

@@ -27,6 +27,16 @@ class Interpreter(console.Shell):
         self.plugins.reload()
         for plugin in self.plugins:
           self.add_plugin(plugin)
+        if len(self.plugins.invalids) > 0:
+          print('Some plugins where not added, type \'plugin_errors\' for more info.')
+
+    def do_plugin_errors(self, dummy=''):
+        if len(self.plugins.invalids) > 0:
+           print('The following plugins where not added:')
+           for e in self.plugins.invalids:
+             print('  %s: %s' % (e.name, e.reason))
+        else:
+          print('No errors found.')
 
     def setattr(self, name, value):
         setattr(self.__class__, name, value)
@@ -48,3 +58,11 @@ class Interpreter(console.Shell):
             self.setattr('complete_%s' % name, complete)
         if plugin.hasattr('help'):
           self.setattr('help_%s' % name, lambda self: plugin.call('help'))
+        elif plugin.getdoc() is not None:
+          def printdoc(self):
+              print(plugin.getdoc())
+          self.setattr('help_%s' % name, printdoc)
+        elif plugin.hasattr('run') and plugin.getdoc('run') is not None:
+          def printdoc(self):
+              print(plugin.getdoc('run'))
+          self.setattr('help_%s' % name, printdoc)
