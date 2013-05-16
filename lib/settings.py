@@ -58,13 +58,10 @@ class SettingsFileWatcher(object):
         return self.__filter(self.__data)
 
     def __reload_if_needed(self):
-        if self.__mtime is None:
-          self.__load(self.__getter())
-          return
         files = self.__getter()
-        for f in files:
-          if os.stat(f).st_mtime > self.__mtime:
-            self.__load(files)
+        isnewer = lambda f: os.stat(f).st_mtime > self.__mtime
+        if self.__mtime is None or any(isnewer(f) for f in files):
+          self.__load(files)
 
     def __load(self, files):
         for f in files:
