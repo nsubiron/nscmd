@@ -44,7 +44,7 @@ def init_nscmd_module(args):
 def init_plugin_module():
     module = sys.modules['nsplugin'] = types.ModuleType('nsplugin')
     class AppCommand(object):
-        pass
+        """Base class for plugin classes."""
     module.AppCommand = AppCommand
     return module
 

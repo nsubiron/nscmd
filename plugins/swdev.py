@@ -15,39 +15,22 @@ class ThrowCommand(nsplugin.AppCommand):
 
 class SysinfoCommand(nsplugin.AppCommand):
     def run(self):
+        """Print system information."""
         print
-        print('machine: ' + platform.machine())
-        print('node: ' + platform.node())
-        print('platform: ' + platform.platform())
-        print('processor: ' + platform.processor())
+        platforminfo = ['machine', 'node', 'platform', 'processor', 'system',
+                        'release', 'version', 'python_build', 'python_compiler',
+                        'python_implementation', 'python_version']
+        for i in platforminfo:
+          if hasattr(platform, i):
+            print('%s: %s' % (i, getattr(platform, i)()))
         print
-        print('system: ' + platform.system())
-        print('release: ' + platform.release())
-        print('version: ' + platform.version())
+        print('sys.path:\n  ' + '\n  '.join(sys.path))
         print
-        print('python_build_no: ' + platform.python_build()[0])
-        print('python_build_date: ' + platform.python_build()[1])
-        print('python_compiler: ' + platform.python_compiler())
-        print('python_branch: ' + platform.python_branch())
-        print('python_implementation: ' + platform.python_implementation())
-        print('python_revision: ' + platform.python_revision())
-        print('python_version: ' + platform.python_version())
+        print('PATH:\n  ' + '\n  '.join(os.environ['PATH'].split(os.pathsep)))
         print
-        print('sys.path:')
-        for path in sys.path:
-          print('  ' + path)
-        print('PATH:')
-        for path in os.environ['PATH'].split(os.pathsep):
-          print('  ' + path)
-        print
-
-    def help(self):
-        print('Print system information.')
 
 class PythoncmdCommand(nsplugin.AppCommand):
     def run(self):
+        """Launch a python interactive console inside this application."""
         python_console = code.InteractiveConsole()
         python_console.interact()
-
-    def help(self):
-        print('Launch a python interactive console inside this application.')
