@@ -22,6 +22,7 @@ class Interpreter(console.Shell):
         self.do_reload_plugins()
 
     def do_reload_plugins(self, dummy=''):
+        """Delete current plugins, reload files and instantiate plugin classes."""
         while len(self.addons) > 0:
           delattr(self.__class__, self.addons.pop())
         self.plugins.reload()
@@ -31,12 +32,17 @@ class Interpreter(console.Shell):
           print('Some plugins where not added, type \'plugin_errors\' for more info.')
 
     def do_plugin_errors(self, dummy=''):
+        """Print errors found while loading plugins."""
         if len(self.plugins.invalids) > 0:
            print('The following plugins where not added:')
            for e in self.plugins.invalids:
              print('  %s: %s' % (e.name, e.reason))
         else:
           print('No errors found.')
+
+    def do_license(self, dummy=''):
+        __doc__ = LICENSE
+        print(LICENSE)
 
     def setattr(self, name, value):
         setattr(self.__class__, name, value)

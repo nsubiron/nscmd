@@ -17,16 +17,16 @@ class Console(cmd.Cmd, object):
         return False
 
     def do_exit(self, s):
+        """Exit the console."""
         return True
 
-    def help_exit(self):
-        print('Exit the console.')
-
     def do_EOF(self, s):
+        """Exit the console."""
         print('exit')
         return self.do_exit(s)
 
-    help_EOF = help_exit
+    def help_help(self):
+        print('usage: help [topic]')
 
 def complete_cd(text, line, start_index, end_index, onlyDirs):
     path = ''
@@ -73,6 +73,7 @@ class DirectoryExplorer(Console):
         return stop
 
     def do_cd(self, line):
+        """usage: cd [dir]"""
         if not line:
           line = os.path.expanduser('~')
         elif line == '-':
