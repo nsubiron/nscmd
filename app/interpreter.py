@@ -1,4 +1,4 @@
-import logging, inspect, re, app
+import logging, inspect, re, shlex, app
 from lib import console, plugins
 
 first_cap_re = re.compile('(.)([A-Z][a-z]+)')
@@ -55,7 +55,7 @@ class Interpreter(console.Shell):
           if argc == 0:
             cmd = lambda self, line: plugin.call('run')
           else:
-            cmd = lambda self, line: plugin.call('run', [name] + line.split())
+            cmd = lambda self, line: plugin.call('run', [name] + shlex.split(line))
           self.setattr('do_%s' % name, cmd)
           if plugin.hasattr('complete'):
             self.setattr('complete_%s' % name, lambda self: plugin.call('complete'))
