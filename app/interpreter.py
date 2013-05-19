@@ -1,4 +1,4 @@
-import logging, inspect, re
+import logging, inspect, re, app
 from lib import console, plugins
 
 first_cap_re = re.compile('(.)([A-Z][a-z]+)')
@@ -41,8 +41,8 @@ class Interpreter(console.Shell):
           print('No errors found.')
 
     def do_license(self, dummy=''):
-        __doc__ = LICENSE
-        print(LICENSE)
+        print(app.LICENSE)
+    help_license = do_license
 
     def setattr(self, name, value):
         setattr(self.__class__, name, value)
