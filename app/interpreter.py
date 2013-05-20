@@ -15,30 +15,40 @@ def get_autocomplete(list_generator):
     return autocomplete_wrapper
 
 class Interpreter(console.Shell):
-    def __init__(self, prompt, plugin_generator):
+    def __init__(self, prompt, plugin_generator, ignore_list):
         console.Shell.__init__(self, prompt)
+        self.ignore_list = ignore_list
         self.plugins = plugins.PluginManager(plugin_generator)
         self.addons = []
-        self.do_reload_plugins()
+        self.do_plugins('reload')
 
-    def do_reload_plugins(self, dummy=''):
-        """Delete current plugins, reload files and instantiate plugin classes."""
-        while len(self.addons) > 0:
-          delattr(self.__class__, self.addons.pop())
-        self.plugins.reload()
-        for plugin in self.plugins:
-          self.add_plugin(plugin)
-        if len(self.plugins.invalids) > 0:
-          print('Some plugins where not added, type \'plugin_errors\' for more info.')
-
-    def do_plugin_errors(self, dummy=''):
-        """Print errors found while loading plugins."""
-        if len(self.plugins.invalids) > 0:
-           print('The following plugins where not added:')
-           for e in self.plugins.invalids:
-             print('  %s: %s' % (e.name, e.reason))
-        else:
-          print('No errors found.')
+    def do_plugins(self, line):
+        """plugins usage:
+  plugins reload - Delete current plugins, reload files and instantiate plugin classes.
+  plugins errors - Print errors found while loading plugins.
+        """
+        try:
+          line = line.strip()
+          if line == 'reload':
+            while len(self.addons) > 0:
+              delattr(self.__class__, self.addons.pop())
+            self.plugins.reload()
+            for plugin in self.plugins:
+              self.add_plugin(plugin)
+            if len(self.plugins.invalids) > 0:
+              print('Some plugins where not added, type \'plugins errors\' for more info.')
+          elif line == 'errors':
+            if len(self.plugins.invalids) > 0:
+              print('The following plugins where not added:')
+              for e in self.plugins.invalids:
+                print('  %s: %s' % (e.name, e.reason))
+            else:
+              print('No errors found.')
+          else:
+            print(self.do_plugins.__doc__)
+        except:
+          logging.exception('Exception on plugins function!')
+    complete_plugins = get_autocomplete(lambda: ['reload', 'errors'])
 
     def do_license(self, dummy=''):
         print(app.LICENSE)
@@ -50,6 +60,8 @@ class Interpreter(console.Shell):
 
     def add_plugin(self, plugin):
         name = get_command_name(plugin.name)
+        if name in self.ignore_list:
+          return
         if plugin.hasattr('run'):
           argc = len(plugin.getargs('run'))
           if argc == 0:

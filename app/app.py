@@ -107,7 +107,8 @@ def main():
         os.chdir(starting_dir)
       plugins_folder = os.path.join(nscmd.ROOT, 'plugins')
       plugin_generator = lambda: plugins.load_plugins(plugins_folder, nsplugin.AppCommand)
-      cmd = interpreter.Interpreter('ns', plugin_generator)
+      ignore_list = sett.get('ignore_list', [])
+      cmd = interpreter.Interpreter('ns', plugin_generator, ignore_list)
       cmd.cmdloop()
     except (SystemExit, KeyboardInterrupt):
       print
