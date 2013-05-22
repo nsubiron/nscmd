@@ -16,7 +16,10 @@
   "starting_dir": "${vol}",
 
   // Default folder for data files.
-  "data_dir": "${vol}/.nscmd",
+  "data_dir": "${vol}/.nscmd/data",
+
+  // Directories in which the application will look for plugins.
+  "plugin_dirs": ["${root}/plugins", "${vol}/.nscmd/darkplugins"],
 
   // Plugins that will be ignored (use the command name).
   "ignore_list": ["throw"]

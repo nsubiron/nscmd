@@ -95,6 +95,7 @@ def parse_arguments():
 
 def main():
     try:
+      tcw = None
       args = parse_arguments()
       add_to_path(args.pop('path'))
       print('Starting nscmd ...')
@@ -105,8 +106,8 @@ def main():
       starting_dir = str(sett.get('starting_dir', nscmd.filter('${vol}')))
       if os.path.isdir(starting_dir):
         os.chdir(starting_dir)
-      plugins_folder = os.path.join(nscmd.ROOT, 'plugins')
-      plugin_generator = lambda: plugins.load_plugins(plugins_folder, nsplugin.AppCommand)
+      plugin_dirs = sett.get('plugin_dirs', [])
+      plugin_generator = lambda: plugins.load_plugins(plugin_dirs, nsplugin.AppCommand)
       ignore_list = sett.get('ignore_list', [])
       cmd = interpreter.Interpreter('ns', plugin_generator, ignore_list)
       cmd.cmdloop()

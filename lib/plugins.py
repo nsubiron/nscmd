@@ -83,27 +83,27 @@ class PluginManager(object):
           except InvalidPlugin as e:
             self.invalids.append(e)
 
-def load_plugins(directory, interface):
-    directory = os.path.abspath(directory)
+def load_plugins(directories, interface):
     module_pattern = re.compile('|'.join(fnmatch.translate(p) for p in ['*.py','*.pyc']))
     strip_ext = lambda f: os.path.splitext(os.path.basename(f))[0]
     get_modules = lambda files: set(strip_ext(f) for f in files if module_pattern.match(f))
     is_valid = lambda obj: inspect.isclass(obj) and issubclass(obj, interface)
-    for dirname, _, filenames in os.walk(directory):
-      added = False
-      if dirname not in sys.path:
-        sys.path.insert(0, dirname)
-        added = True
-      for module_name in get_modules(filenames):
-        try:
-          module_info = imp.find_module(module_name, [dirname])
-          # This do a reload if already imported.
-          module = imp.load_module(module_name, *module_info)
-          for name, declaration in inspect.getmembers(module, is_valid):
-            yield PluginProxy(name, declaration)
-        except:
-          pass
-        finally:
-          module_info[0].close()
-      if added:
-        sys.path.remove(dirname)
+    for directory in directories:
+      for dirname, _, filenames in os.walk(os.path.abspath(directory)):
+        added = False
+        if dirname not in sys.path:
+          sys.path.insert(0, dirname)
+          added = True
+        for module_name in get_modules(filenames):
+          try:
+            module_info = imp.find_module(module_name, [dirname])
+            # This do a reload if already imported.
+            module = imp.load_module(module_name, *module_info)
+            for name, declaration in inspect.getmembers(module, is_valid):
+              yield PluginProxy(name, declaration)
+          except:
+            pass
+          finally:
+            module_info[0].close()
+        if added:
+          sys.path.remove(dirname)
