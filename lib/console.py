@@ -109,6 +109,13 @@ class Shell(DirectoryExplorer):
             pass
 
     def do_alias(self, line):
+        """usage:
+  alias                      to print current aliases.
+  alias <alias>=\'<command>\'  to add an alias.
+
+note: This will be only valid during current session, if you want to store it
+permanently add it to \'~/.bash_aliases\'.
+"""
         if not line or line.isspace():
           for alias in self.aliases.keys():
             print('alias %s=\'%s\'' % (alias, self.aliases[alias]))
@@ -117,13 +124,9 @@ class Shell(DirectoryExplorer):
           command = command.strip()[1:-1]
           self.aliases[alias] = command
 
-    def help_alias(self):
-        print('  alias                        to print current aliases.')
-        print('  alias <alias>=\'<command>\'  to add an alias.')
-        print('note: This will be only valid during current session, if you'),
-        print('want to store it permanently add it to \'~/.bash_aliases\'.')
-
     def do_shell(self, line):
+        """Execute shell commands. Note: By default, unrecognized commands are
+passed to shell."""
         cmd, sep, args = line.partition(' ')
         if cmd in self.aliases.keys():
           alias = self.aliases[cmd]
@@ -134,7 +137,3 @@ class Shell(DirectoryExplorer):
     # If not recognized, try to run as shell.
     def default(self, line):
         self.do_shell(line)
-
-    def help_shell(self):
-        print('Execute shell commands.'),
-        print('Unrecognized commands will be executed as shell.')
