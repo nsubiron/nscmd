@@ -6,11 +6,13 @@ def get_commands(platform=platform.system()):
     if platform.lower() == 'windows':
       args['automount'] = '${app} /q /v ${volume}'
       args['mount'] = '${app} /q /v ${volume} /l${where}'
+      args['mountpw'] = '${app} /q /v ${volume} /l${where} /p${pw}'
       args['dismount'] = '${app} /q /d${where}'
       args['dismountall'] = '${app} /q'
     else:
       args['automount'] = 'sudo ${app} -t -k "" --protect-hidden=no ${volume}'
       args['mount'] = 'sudo ${app} -t -k "" --protect-hidden=no ${volume} ${where}'
+      args['mountpw'] = 'sudo ${app} -t -k "" --protect-hidden=no -p ${pw} ${volume} ${where}'
       args['dismount'] = 'sudo ${app} -t -d ${where}'
       args['dismountall'] = 'sudo ${app} -t -d'
     return args
@@ -22,10 +24,14 @@ COMMANDS = get_commands()
 def out(text):
     print(text)
 
-def mount(volume, where, validator=os.path.isdir, timeout=15):
+def mount(volume, where, pw=None, validator=os.path.isdir, timeout=15):
     dictionary = { 'app': APP, 'volume': volume, 'where': where }
     out(settings.filter('Mounting ${volume} at ${where} ...', dictionary))
-    os.system(settings.filter(COMMANDS['mount'], dictionary))
+    if pw is None:
+      cmd = settings.filter(COMMANDS['mount'], dictionary)
+    else:
+      cmd = settings.filter(COMMANDS['mountpw'], dictionary.update({'pw': pw}))
+    os.system(cmd)
     return wait(where, validator, timeout)
 
 def automount(volume):
