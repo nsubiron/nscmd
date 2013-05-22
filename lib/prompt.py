@@ -1,3 +1,5 @@
+import platform
+
 # Ask a yes/no question via input() and return their answer.
 #   'question' is a string that is presented to the user.
 #   'default' is the presumed answer if the user just hits <Enter>.
@@ -20,3 +22,30 @@ def yes_no(question, default='yes'):
         return valid[choice]
       else:
         print('Please answer \'%s\'.' % '\' or \''.join(valid.keys()))
+
+if platform.system() == 'Windows':
+  def color_string(string, *attributes):
+      return string
+else:
+  def color_string(string, *attributes):
+      """ If 'bold', it must be last attribute."""
+      attrmap = {
+        'bold': '1',
+        'black': '0;30',
+        'blue': '0;34',
+        'brown': '0;33',
+        'cyan': '0;36',
+        'dark gray': '1;30',
+        'green': '0;32',
+        'light blue': '1;34',
+        'light cyan': '1;36',
+        'light gray': '0;37',
+        'light green': '1;32',
+        'light purple': '1;35',
+        'light red': '1;31',
+        'purple': '0;35',
+        'red': '0;31',
+        'white': '1;37',
+        'yellow': '1;33'}
+      attrstr = ';'.join(a for a in map(attrmap.get, attributes) if a is not None)
+      return '\x1b[%sm%s\x1b[0m' % (attrstr, string)
