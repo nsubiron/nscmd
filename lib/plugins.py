@@ -89,7 +89,8 @@ def load_plugins(directories, interface):
     get_modules = lambda files: set(strip_ext(f) for f in files if module_pattern.match(f))
     is_valid = lambda obj: inspect.isclass(obj) and issubclass(obj, interface)
     for directory in directories:
-      for dirname, _, filenames in os.walk(os.path.abspath(directory)):
+      for dirname, subfolders, filenames in os.walk(os.path.abspath(directory)):
+        subfolders[:] = [d for d in subfolders if not d[0] == '.']
         added = False
         if dirname not in sys.path:
           sys.path.insert(0, dirname)
