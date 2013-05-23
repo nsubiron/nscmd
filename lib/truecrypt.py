@@ -30,7 +30,8 @@ def mount(volume, where, pw=None, validator=os.path.isdir, timeout=15):
     if pw is None:
       cmd = settings.filter(COMMANDS['mount'], dictionary)
     else:
-      cmd = settings.filter(COMMANDS['mountpw'], dictionary.update({'pw': pw}))
+      dictionary.update({'pw': pw})
+      cmd = settings.filter(COMMANDS['mountpw'], dictionary)
     os.system(cmd)
     return wait(where, validator, timeout)
 
