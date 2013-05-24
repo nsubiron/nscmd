@@ -18,7 +18,6 @@
 """
 import os, sys, inspect, types, platform, logging, argparse
 from lib import utils, settings, truecrypt, prompt, plugins
-import interpreter
 
 __all__ = ['main', 'LICENSE']
 
@@ -39,6 +38,17 @@ def add_to_path(paths):
 
 ## init environment ############################################################
 
+def init_settings(root, platform, filter_function):
+    ext = '.ns-settings'
+    exclude_platforms = ['linux', 'windows']
+    if platform in exclude_platforms:
+      exclude_platforms.remove(platform)
+    includes = ['*' + ext]
+    excludes = [i + ext for i in exclude_platforms]
+    settings_folder = os.path.join(root, 'settings')
+    file_getter = lambda: sorted(utils.fwalk(settings_folder, includes, excludes))
+    return settings.SettingsFileWatcher(file_getter, filter_function)
+
 def init_nscmd_module(args):
     module = sys.modules['nscmd'] = types.ModuleType('nscmd')
     module.APPNAME = 'nscmd'
@@ -46,19 +56,12 @@ def init_nscmd_module(args):
     module.PLATFORM = platform.system().lower()
     sysmap = {'root': module.ROOT}
     sysmap['home'] = os.path.expanduser('~')
-    module.filter = lambda obj: settings.filter(obj, sysmap)
-    settings_folder = os.path.join(module.ROOT, 'settings')
-    excludes = ['linux', 'windows']
-    excludes.remove(module.PLATFORM)
-    sfw = settings.SettingsFileWatcher(
-        settings_folder,
-        filter=module.filter,
-        permanent=args,
-        include=['*.ns-settings'],
-        exclude=map(lambda item : item + '.ns-settings', excludes))
-    sysmap['vol'] = str(sfw.get('vol'))
-    sysmap['data_dir'] = str(sfw.get('data_dir'))
-    module.get_settings = lambda: sfw.getall()
+    module.filter = lambda obj: utils.replacekeys(obj, sysmap)
+    sfw = init_settings(module.ROOT, module.PLATFORM, module.filter)
+    sfw.add_permanent_settings(args)
+    sysmap['vol'] = str(sfw.get().get('vol'))
+    sysmap['data_dir'] = str(sfw.get().get('data_dir'))
+    module.get_settings = lambda: sfw.get()
     return module
 
 def init_plugin_module():
@@ -95,7 +98,7 @@ def parse_arguments():
 
 def main():
     try:
-      tcw = None
+      tcwrapper = None
       args = parse_arguments()
       add_to_path(args.pop('path'))
       print('Starting nscmd ...')
@@ -109,6 +112,8 @@ def main():
       plugin_dirs = sett.get('plugin_dirs', [])
       plugin_generator = lambda: plugins.load_plugins(plugin_dirs, nsplugin.AppCommand)
       ignore_list = sett.get('ignore_list', [])
+      # Environment should be ready before importing the interpreter.
+      import interpreter
       cmd = interpreter.Interpreter('ns', plugin_generator, ignore_list)
       cmd.cmdloop()
     except (SystemExit, KeyboardInterrupt):

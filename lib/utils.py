@@ -1,39 +1,67 @@
-import os, inspect, fnmatch, platform
+import fnmatch, os, platform, re
 
-def which(program):
-    exe_extensions = ['']
-    if platform.system().lower() == 'windows':
-      exe_extensions += ['.exe', '.bat']
-    is_exe = lambda fpath: os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-    get_exes = lambda name: [name + ext for ext in exe_extensions]
-    fpath, fname = os.path.split(program)
-    try:
-      if fpath != '':
-        return next(exe for exe in get_exes(program) if is_exe(exe))
-      else:
-        for path in os.environ['PATH'].split(os.pathsep):
-          for exe_path in get_exes(os.path.join(path, program)):
-            if is_exe(exe_path):
-              return exe_path
-    except StopIteration:
-      pass
+DEFAULT_PATHEXT = ['']
+if platform.system().lower() == 'windows':
+  DEFAULT_PATHEXT += ['.com', '.exe', '.bat', '.cmd']
+
+def which(name, flags=os.X_OK):
+    """Return the full path to the first executable found in the environmental
+    variable PATH matching the given name."""
+    envpath = os.environ.get('PATH', None)
+    if envpath is None:
+      return None
+    exts = set(os.environ.get('PATHEXT', '').split(os.pathsep) + DEFAULT_PATHEXT)
+    for path in envpath.split(os.pathsep):
+      pname = os.path.join(path, name)
+      if os.access(pname, flags):
+        return pname
+      for ext in exts:
+        pnameext = pname + ext
+        if os.access(pnameext, flags):
+          return pnameext
     return None
 
-def find_files(root, includes=[], excludes=[]):
-    if includes is None or len(includes) < 1:
-      include = lambda f: True
+def regex_callable(patterns):
+    """Return a callable object that returns True if matches any regular
+    expression in patterns"""
+    if patterns is None:
+      return lambda x: False
+    if isinstance(patterns, str):
+      patterns = [patterns]
+    r = re.compile(r'|'.join(fnmatch.translate(p) for p in patterns))
+    return lambda x: r.match(x) is not None
+
+def walk(root, file_includes=['*'], file_excludes=None, dir_excludes=['.git', '.svn']):
+    """Convenient wrap around os.walk. Patterns are checked on base names, not
+    on full path names."""
+    fincl = regex_callable(file_includes)
+    fexcl = regex_callable(file_excludes)
+    dexcl = regex_callable(dir_excludes)
+    for path, dirs, files in os.walk(os.path.abspath(root)):
+      dirs[:] = [d for d in dirs if not dexcl(d)]
+      files[:] = [f for f in files if fincl(f) and not fexcl(f)]
+      yield path, dirs, files
+
+def fwalk(*args, **kwargs):
+    """Walk over the full path of the files matching the arguments given. See
+    utils.walk."""
+    for path, _, files in walk(*args, **kwargs):
+      for f in files:
+        yield os.path.join(path, f)
+
+def replacekeys(obj, dictionary):
+    """Replace any ${key} occurrence in obj by its value in dictionary."""
+    if obj is None:
+      return None
+    elif isinstance(obj, str) or isinstance(obj, unicode):
+      for key, value in dictionary.items():
+        obj = obj.replace('${%s}' % key, value)
+      return obj
+    elif isinstance(obj, dict):
+      return dict((k, replacekeys(i, dictionary)) for k, i in obj.items())
+    elif any(isinstance(obj, x) for x in [tuple, list, set]):
+      return map(lambda i: replacekeys(i, dictionary), obj)
+    elif any(isinstance(obj, x) for x in [bool, int, float, long, complex]):
+      return obj
     else:
-      def include(f):
-          for i in list(includes):
-            if fnmatch.fnmatch(f, i):
-              return True
-    def validate(f):
-        if include(f):
-          for e in list(excludes):
-            if fnmatch.fnmatch(f, e):
-              return False
-          return True
-    lst = []
-    for path, dirs, files in os.walk(root):
-      lst += [os.path.join(path, f) for f in files if validate(f)]
-    return lst
+      raise Exception('Type object \'%s\' not implemented.' % type(obj))

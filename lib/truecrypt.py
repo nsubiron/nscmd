@@ -1,19 +1,19 @@
 import platform, os, argparse, re, time
-import utils, settings
+import utils
 
 def get_commands(platform=platform.system()):
     args = {}
     if platform.lower() == 'windows':
-      args['automount'] = '${app} /q /v ${volume}'
-      args['mount'] = '${app} /q /v ${volume} /l${where}'
-      args['mountpw'] = '${app} /q /v ${volume} /l${where} /p${pw}'
+      args['automount'] = '${app} /q /v \"${volume}\"'
+      args['mount'] = '${app} /q /v \"${volume}\" /l${where}'
+      args['mountpw'] = '${app} /q /v \"${volume}\" /l${where} /p${pw}'
       args['dismount'] = '${app} /q /d${where}'
       args['dismountall'] = '${app} /q'
     else:
-      args['automount'] = 'sudo ${app} -t -k "" --protect-hidden=no ${volume}'
-      args['mount'] = 'sudo ${app} -t -k "" --protect-hidden=no ${volume} ${where}'
-      args['mountpw'] = 'sudo ${app} -t -k "" --protect-hidden=no -p ${pw} ${volume} ${where}'
-      args['dismount'] = 'sudo ${app} -t -d ${where}'
+      args['automount'] = 'sudo ${app} -t -k "" --protect-hidden=no \"${volume}\"'
+      args['mount'] = 'sudo ${app} -t -k "" --protect-hidden=no \"${volume}\" \"${where}\"'
+      args['mountpw'] = 'sudo ${app} -t -k "" --protect-hidden=no -p \'${pw}\' \"${volume}\" \"${where}\"'
+      args['dismount'] = 'sudo ${app} -t -d \"${where}\"'
       args['dismountall'] = 'sudo ${app} -t -d'
     return args
 
@@ -26,39 +26,32 @@ def out(text):
 
 def mount(volume, where, pw=None, validator=os.path.isdir, timeout=15):
     dictionary = { 'app': APP, 'volume': volume, 'where': where }
-    out(settings.filter('Mounting ${volume} at ${where} ...', dictionary))
+    out(utils.replacekeys('Mounting ${volume} at ${where} ...', dictionary))
     if pw is None:
-      cmd = settings.filter(COMMANDS['mount'], dictionary)
+      cmd = utils.replacekeys(COMMANDS['mount'], dictionary)
     else:
       dictionary.update({'pw': pw})
-      cmd = settings.filter(COMMANDS['mountpw'], dictionary)
+      cmd = utils.replacekeys(COMMANDS['mountpw'], dictionary)
     os.system(cmd)
-    return wait(where, validator, timeout)
+    return wait(lambda: validator(where), timeout)
 
 def automount(volume):
     dictionary = { 'app': APP, 'volume': volume }
-    out(settings.filter('Mounting ${volume} ...', dictionary))
-    os.system(settings.filter(COMMANDS['automount'], dictionary))
+    out(utils.replacekeys('Mounting ${volume} ...', dictionary))
+    os.system(utils.replacekeys(COMMANDS['automount'], dictionary))
 
 def dismount(where):
     dictionary = { 'app': APP, 'where': where }
-    out(settings.filter('Dismounting ${where} ...', dictionary))
-    os.system(settings.filter(COMMANDS['dismount'], dictionary))
+    out(utils.replacekeys('Dismounting ${where} ...', dictionary))
+    os.system(utils.replacekeys(COMMANDS['dismount'], dictionary))
 
 def dismountall():
     dictionary = { 'app': APP }
     out('Dismounting all ...')
-    os.system(settings.filter(COMMANDS['dismountall'], dictionary))
+    os.system(utils.replacekeys(COMMANDS['dismountall'], dictionary))
 
 def call(argv):
     parser = argparse.ArgumentParser(prog='truecrypt')
-    class ExitException(Exception):
-        pass
-    def doexit(status=0, message=None):
-        if message is not None:
-          print(message)
-        raise ExitException
-    parser.exit = doexit
     subparsers = parser.add_subparsers(dest='cmd')
     for key, cmd in COMMANDS.items():
       subparser = subparsers.add_parser(key)
@@ -66,27 +59,25 @@ def call(argv):
         subparser.add_argument(arg)
     try:
       args = vars(parser.parse_args(argv))
-    except (ExitException, SystemExit):
+    except SystemExit:
       return
     cmd = args.pop('cmd')
     args['app'] = APP
-    os.system(settings.filter(COMMANDS[cmd], args))
+    os.system(utils.replacekeys(COMMANDS[cmd], args))
 
-def wait(mount_point, validator, time_out, time_step=1):
-    if validator(mount_point):
+def wait(validator, time_out, time_step=1):
+    if validator():
       return True
     try:
-      print('Waiting for truecrypt ...')
+      out('Waiting for truecrypt ...')
       start = time.time()
-      while True:
-        if validator(mount_point):
+      while (time.time() - start) < time_out:
+        if validator():
           return True
-        if (time.time() - start) > time_out:
-          break
         time.sleep(time_step)
-      return False
     except KeyboardInterrupt:
-      return False
+      pass
+    return False
 
 class TruecryptException(Exception):
     pass
@@ -96,4 +87,3 @@ class TruecryptWrapper(object):
         if not mount(str(volume), str(where)):
           raise TruecryptException('Error mounting %s at %s.' % (volume, where))
         self.dismount = lambda: dismount(where)
-        self.__del__ = lambda: dismount(where)

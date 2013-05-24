@@ -1,5 +1,6 @@
 import logging, inspect, re, shlex, app
 from lib import console, plugins
+import nsplugin
 
 first_cap_re = re.compile('(.)([A-Z][a-z]+)')
 all_cap_re = re.compile('([a-z0-9])([A-Z])')
@@ -14,51 +15,78 @@ def get_autocomplete(list_generator):
         return list_generator()
     return autocomplete_wrapper
 
+class PluginCommand(nsplugin.AppCommand):
+    """plugin usage:
+  plugin reload       - Delete current plugins, reload files and instantiate plugin classes.
+  plugin errors       - Print errors found while loading plugins.
+  plugin dependencies - Print external dependencies for each plugin.
+  plugin platforms    - Print platform specifications for each plugin.
+    """
+    def __init__(self, parent, manager):
+        self.parent = parent
+        self.manager = manager
+        self.attribs = {
+            'dependencies': ['__extdependencies__', []],
+            'platforms': ['__platforms__', ['not specified']]}
+
+    def run(self, argv):
+        cmd = argv[-1]
+        if cmd == 'reload':
+          self.parent.reload_plugins()
+          if len(self.manager.invalids) > 0:
+            print('Some plugins where not added, type \'plugin errors\' for more info.')
+        elif cmd in self.attribs:
+          get = lambda p: (get_command_name(p.name), p.getattr(*self.attribs[cmd]))
+          d = dict(get(i.plugin) for i in self.manager.invalids)
+          d.update(dict(get(p) for p in self.manager))
+          maximum = max(map(len,d.keys()))
+          for key in sorted(d.keys()):
+            print('  %s = %s' % (key.ljust(maximum), ', '.join(d[key])))
+        elif cmd == 'errors':
+          if len(self.manager.invalids) > 0:
+            print('The following plugins where not added:')
+            for e in self.manager.invalids:
+              print('  %s: %s' % (e.name, e.reason))
+          else:
+            print('No errors found.')
+        else:
+          print(PluginCommand.__doc__)
+
+    def complete_list(self):
+        return sorted(['reload', 'errors'] + self.attribs.keys())
+
 class Interpreter(console.Shell):
     def __init__(self, prompt, plugin_generator, ignore_list):
         console.Shell.__init__(self, prompt)
         self.ignore_list = ignore_list
         self.plugins = plugins.PluginManager(plugin_generator)
         self.addons = []
-        self.do_plugins('reload')
-
-    def do_plugins(self, line):
-        """plugins usage:
-  plugins reload - Delete current plugins, reload files and instantiate plugin classes.
-  plugins errors - Print errors found while loading plugins.
-        """
         try:
-          line = line.strip()
-          if line == 'reload':
-            while len(self.addons) > 0:
-              delattr(self.__class__, self.addons.pop())
-            self.plugins.reload()
-            for plugin in self.plugins:
-              self.add_plugin(plugin)
-            if len(self.plugins.invalids) > 0:
-              print('Some plugins where not added, type \'plugins errors\' for more info.')
-          elif line == 'errors':
-            if len(self.plugins.invalids) > 0:
-              print('The following plugins where not added:')
-              for e in self.plugins.invalids:
-                print('  %s: %s' % (e.name, e.reason))
-            else:
-              print('No errors found.')
-          else:
-            print(self.do_plugins.__doc__)
+          p = plugins.PluginProxy('PluginCommand', PluginCommand)
+          p.validate()
+          p.instantiate(self, self.plugins)
+          self.add_plugin(p, permanent=True)
         except:
-          logging.exception('Exception on plugins function!')
-    complete_plugins = get_autocomplete(lambda: ['reload', 'errors'])
+          logging.exception('Problem initializing \'plugin\' command.')
+        self.reload_plugins()
+
+    def reload_plugins(self):
+        while len(self.addons) > 0:
+          delattr(self.__class__, self.addons.pop())
+        self.plugins.reload()
+        for plugin in self.plugins:
+          self.add_plugin(plugin)
 
     def do_license(self, dummy=''):
         print(app.LICENSE)
     help_license = do_license
 
-    def setattr(self, name, value):
+    def setattr(self, name, value, permanent):
         setattr(self.__class__, name, value)
-        self.addons.append(name)
+        if not permanent:
+          self.addons.append(name)
 
-    def add_plugin(self, plugin):
+    def add_plugin(self, plugin, permanent=False):
         name = get_command_name(plugin.name)
         if name in self.ignore_list:
           return
@@ -68,19 +96,21 @@ class Interpreter(console.Shell):
             cmd = lambda self, line: plugin.call('run')
           else:
             cmd = lambda self, line: plugin.call('run', [name] + shlex.split(line))
-          self.setattr('do_%s' % name, cmd)
+          self.setattr('do_%s' % name, cmd, permanent)
           if plugin.hasattr('complete'):
-            self.setattr('complete_%s' % name, lambda self: plugin.call('complete'))
+            complete_wrapper = lambda self: plugin.call('complete')
+            self.setattr('complete_%s' % name, complete_wrapper, permanent)
           elif plugin.hasattr('complete_list'):
             complete = get_autocomplete(lambda: plugin.call('complete_list'))
-            self.setattr('complete_%s' % name, complete)
+            self.setattr('complete_%s' % name, complete, permanent)
         if plugin.hasattr('help'):
-          self.setattr('help_%s' % name, lambda self: plugin.call('help'))
+          help_wrapper = lambda self: plugin.call('help')
+          self.setattr('help_%s' % name, help_wrapper, permanent)
         elif plugin.getdoc() is not None:
           def printdoc(self):
               print(plugin.getdoc())
-          self.setattr('help_%s' % name, printdoc)
+          self.setattr('help_%s' % name, printdoc, permanent)
         elif plugin.hasattr('run') and plugin.getdoc('run') is not None:
           def printdoc(self):
               print(plugin.getdoc('run'))
-          self.setattr('help_%s' % name, printdoc)
+          self.setattr('help_%s' % name, printdoc, permanent)
