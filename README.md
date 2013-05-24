@@ -12,10 +12,14 @@ out help on a certain topic.
 ### Features
   * **truecrypt** Mount a truecrypt volume at start-up and dismount it on exit.
   * **plugins** Commands are loaded dynamically through a plugin mechanism.
-  * **almost-multiplatform** Meant for linux, functional under windows.
+  * **quite-multiplatform** Tested on linux and windows, should work on other.
+
+### Notes
+  * So far only tested on Python 2.7.3.
+  * Tab completion is implemented by the python ``cmd`` package, to make it work
+    under windows install [pyreadline](https://pypi.python.org/pypi/pyreadline).
 
 ### Example: On a removable media under windows
-
 Set a directory with the executables you want to make available (e.g., a
 portable truecrypt executable). Clone the repository on that folder and call
 
@@ -38,8 +42,9 @@ command-line arguments.
 ## Settings
 Settings files follow ``json`` syntax supporting ``//``-like comments. It will
 import every file with the extension ``.ns-settings`` found in
-``${root}/settings``, with the exception of ``linux.ns-settings`` and  ``windows
-.ns-settings`` that will be loaded only on their corresponding  platform.
+``${root}/settings``, with the exception of ``linux.ns-settings`` and
+``windows.ns-settings`` that will be loaded only on their corresponding
+platform.
 
 ### Variables
 The following variables are available on the settings file.
