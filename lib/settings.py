@@ -53,5 +53,6 @@ class SettingsFileWatcher(object):
           except SettingsFileException as e:
             print('Error on settings file \'%s\'' % e.filepath)
             print('%s: %s' % (type(e.subexception).__name__, e.subexception))
-        self._data.update(self._permanentdata)
-        self._mtime = time.time()
+        if load:
+          self._data.update(self._permanentdata)
+          self._mtime = time.time()
