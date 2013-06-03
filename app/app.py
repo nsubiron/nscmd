@@ -115,6 +115,7 @@ def main():
       # Environment should be ready before importing the interpreter.
       import interpreter
       cmd = interpreter.Interpreter('ns', plugin_generator, ignore_list)
+      nscmd.run_command = cmd.run_command
       cmd.cmdloop()
     except (SystemExit, KeyboardInterrupt):
       print

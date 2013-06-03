@@ -70,6 +70,14 @@ class Interpreter(console.Shell):
           logging.exception('Problem initializing \'plugin\' command.')
         self.reload_plugins()
 
+    def run_command(self, line):
+        try:
+          args = line.split(' ', 1)
+          default = lambda x: self.default(line)
+          getattr(self, 'do_%s' % args[0], default)(' '.join(args[1:]))
+        except:
+          logging.exception('Exception running \'%s\'' % line)
+
     def reload_plugins(self):
         while len(self.addons) > 0:
           delattr(self.__class__, self.addons.pop())

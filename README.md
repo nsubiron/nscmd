@@ -90,15 +90,23 @@ are available when the plugins are called.
 
 #### nscmd
 <table><tr>
-<td>APPNAME</td><td>string</td><td>Name of the application.</td>
+<td>APPNAME</td><td>string</td>
+<td>Name of the application.</td>
 </tr><tr>
-<td>PLATFORM</td><td>string</td><td>Current platform.</td>
+<td>PLATFORM</td><td>string</td>
+<td>Current platform.</td>
 </tr><tr>
-<td>ROOT</td><td>string</td><td>Root folder of the app.</td>
+<td>ROOT</td><td>string</td>
+<td>Root folder of the app.</td>
 </tr><tr>
-<td>filter(obj)</td><td>function</td><td>Replace every occurrence of a system variable in obj by its value.</td>
+<td>filter(obj)</td><td>function</td>
+<td>Replace every occurrence of a system variable in obj by its value.</td>
 </tr><tr>
-<td>get_plugins()</td><td>function</td><td>Return the data loaded from the setting files.</td>
+<td>get_plugins()</td><td>function</td>
+<td>Return the data loaded from the setting files.</td>
+</tr><tr>
+<td>run_command(line)</td><td>function</td>
+<td>Use the interpreter to call line.</td>
 </tr></table>
 
 #### nsplugin

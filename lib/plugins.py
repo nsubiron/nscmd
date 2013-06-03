@@ -33,7 +33,6 @@ class PluginProxy(object):
         try:
           self.instance = self.declaration(*args, **kwargs)
         except Exception as e:
-          logging.exception('Exception creating instance of plugin \'%s\'' % self.name)
           message = 'Exception raised creating instance: %s: %s'
           raise InvalidPlugin(self, message % (type(e).__name__, e))
 
