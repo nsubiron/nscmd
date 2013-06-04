@@ -22,5 +22,8 @@
   "plugin_dirs": ["${root}/plugins", "${vol}/.nscmd/darkplugins"],
 
   // Plugins that will be ignored (use the command name).
-  "ignore_list": ["throw"]
+  "ignore_list": ["throw"],
+
+  // Python script that will be called just before enter the interpreter loop.
+  "startup_script": "${data_dir}/nscmd_startup.py"
 }

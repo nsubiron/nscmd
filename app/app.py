@@ -96,6 +96,15 @@ def parse_arguments():
     parser.add_argument('--path', nargs='+', default=[], help='add to environment variable PATH')
     return dict((k,v) for k,v in vars(parser.parse_args()).items() if v is not None)
 
+def call_startup_script(path):
+    if path is not None and os.path.isfile(str(path)):
+      try:
+        execfile(path)
+      except SystemExit as e:
+        raise e
+      except:
+        logging.exception('Exception in \'%s\'.' % path)
+
 def main():
     try:
       tcwrapper = None
@@ -116,6 +125,7 @@ def main():
       import interpreter
       cmd = interpreter.Interpreter('ns', plugin_generator, ignore_list)
       nscmd.run_command = cmd.run_command
+      call_startup_script(sett.get('startup_script'))
       cmd.cmdloop()
     except (SystemExit, KeyboardInterrupt):
       print
